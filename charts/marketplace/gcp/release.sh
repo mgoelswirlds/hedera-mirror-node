@@ -34,7 +34,7 @@ function retag() {
         target="${registry}"
     fi
 
-    docker pull "${source}"
+    docker pull "${source}" --platform linux/amd64
     docker tag "${source}" "${target}:${target_tag}"
     docker push "${target}:${target_tag}"
 
@@ -46,10 +46,11 @@ function retag() {
 }
 
 # Ensure chart app version matches schema.yaml version
-sed -i .bak "s/version: .*/version: ${target_tag}/" values.yaml
+cp values.yaml values.yaml.bak
+sed "s/version: .*/version: ${target_tag}/" values.yaml
 
 # Build Marketplace deployer image
-docker build -f ./Dockerfile -t "${registry}/deployer:${target_tag}" --build-arg TAG="${target_tag}" ../..
+docker build -f ./Dockerfile -t "${registry}/deployer:${target_tag}" --platform linux/amd64 --build-arg TAG="${target_tag}" ../..
 docker push "${registry}/deployer:${target_tag}"
 
 # Retag other images

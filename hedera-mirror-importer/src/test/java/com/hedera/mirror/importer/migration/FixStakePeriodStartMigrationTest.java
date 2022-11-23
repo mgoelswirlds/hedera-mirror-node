@@ -37,11 +37,9 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -50,7 +48,7 @@ import com.hedera.mirror.importer.util.Utility;
 class FixStakePeriodStartMigrationTest extends IntegrationTest {
 
     private final JdbcOperations jdbcOperations;
-    @Value("classpath:db/migration/v1/V1.68.2.1__fix_stake_period_start.sql")
+    @Value("classpath:db/migration/v1/V1.68.2__fix_stake_period_start.sql")
     private final File migrationSql;
     private final EntityRepository entityRepository;
 
@@ -61,21 +59,21 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void fixStakePeriodStart() {
+    void fixStatePeriodStart() {
         // given
         // two staking reward transfers for an account, the entity lower timestamp is the first reward payout's timestamp
         // the migration should fix the stake period start
-        long transferTimestamp1 = domainBuilder.timestamp() + 100L;
-        long transferTimestamp2 = transferTimestamp1 + Duration.ofDays(1).toNanos();
+        long transferTimestamp = domainBuilder.timestamp() + 100L;
         var entity = domainBuilder.entity()
-                .customize(e -> e.stakedNodeId(1L).stakePeriodStart(Utility.getEpochDay(transferTimestamp2))
-                        .timestampRange(Range.atLeast(transferTimestamp1)))
+                .customize(e -> e.stakedNodeId(1L).stakePeriodStart(1000L)
+                        .timestampRange(Range.atLeast(transferTimestamp)))
+                .persist();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
                 .persist();
         domainBuilder.stakingRewardTransfer()
-                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp1))
-                .persist();
-        domainBuilder.stakingRewardTransfer()
-                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp2))
+                .customize(t -> t.accountId(entity.getId())
+                        .consensusTimestamp(transferTimestamp + Duration.ofDays(1L).toNanos()))
                 .persist();
 
         // when
@@ -87,50 +85,7 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void fixStakePeriodStartHistory() {
-        // given
-        long createdTimestamp = domainBuilder.timestamp();
-        long updateTimestamp1 = createdTimestamp + Duration.ofDays(5).toNanos();
-        var entityHistoryWrapper = domainBuilder.entityHistory()
-                .customize(e -> e.createdTimestamp(createdTimestamp)
-                        .stakedNodeId(-1L)
-                        .stakePeriodStart(-1L)
-                        .timestampRange(Range.closedOpen(createdTimestamp, updateTimestamp1))
-                );
-        var entityHistory1 = entityHistoryWrapper.persist();
-        long rewardTimestamp1 = updateTimestamp1 + Duration.ofDays(2).toNanos();
-        long rewardTimestamp2 = rewardTimestamp1 + Duration.ofDays(2).toNanos();
-        long updateTimestamp2 = rewardTimestamp2 + Duration.ofDays(3).toNanos();
-        var entityHistory2 = entityHistoryWrapper
-                .customize(e -> e.stakedNodeId(0L)
-                        .stakePeriodStart(Utility.getEpochDay(rewardTimestamp2))
-                        .timestampRange(Range.closedOpen(updateTimestamp1, updateTimestamp2))
-                )
-                .persist();
-        domainBuilder.stakingRewardTransfer()
-                .customize(t -> t.accountId(entityHistory1.getId()).consensusTimestamp(rewardTimestamp1))
-                .persist();
-        domainBuilder.stakingRewardTransfer()
-                .customize(t -> t.accountId(entityHistory1.getId()).consensusTimestamp(rewardTimestamp2))
-                .persist();
-        var entity = domainBuilder.entity()
-                .customize(e -> e.createdTimestamp(createdTimestamp)
-                        .id(entityHistory1.getId())
-                        .num(entityHistory1.getNum())
-                        .timestampRange(Range.atLeast(updateTimestamp2)))
-                .persist();
-
-        // when
-        migrate();
-
-        // then
-        entityHistory2.setStakePeriodStart(entityHistory2.getStakePeriodStart() - 1);
-        assertEntities().containsExactly(entity);
-        assertHistoryEntities().containsExactlyInAnyOrder(entityHistory1, entityHistory2);
-    }
-
-    @Test
-    void noopWithCryptoUpdateAfterStakingRewardTransfer() {
+    void noopWithCyptoUpdateAfterStakingRewardTransfer() {
         // given
         // account has crypto update transaction after its staking reward, the migration should not change its stake
         // period start
@@ -157,7 +112,7 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
                 .customize(e -> e.deleted(true).stakedNodeId(3L).stakePeriodStart(3000L)
                         .timestampRange(Range.atLeast(transferTimestamp + 1L)))
                 .persist();
-        domainBuilder.stakingRewardTransfer()
+        var transfer = domainBuilder.stakingRewardTransfer()
                 .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
                 .persist(); // deleted
 
@@ -176,7 +131,7 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
                 .customize(e -> e.stakedNodeId(-1L).stakePeriodStart(-1L)
                         .timestampRange(Range.atLeast(transferTimestamp + 1L)))
                 .persist();
-        domainBuilder.stakingRewardTransfer()
+        var transfer = domainBuilder.stakingRewardTransfer()
                 .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
                 .persist();
 
@@ -195,7 +150,7 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
                 .customize(e -> e.declineReward(true).stakedNodeId(5L).stakePeriodStart(5000L)
                         .timestampRange(Range.atLeast(transferTimestamp + 1L)))
                 .persist();
-        domainBuilder.stakingRewardTransfer()
+        var transfer = domainBuilder.stakingRewardTransfer()
                 .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
                 .persist(); // decline reward
 
@@ -220,14 +175,8 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
 
     private IterableAssert<Entity> assertEntities() {
         return assertThat(entityRepository.findAll())
-                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "declineReward", "stakedNodeId",
+                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "declineReward", "stakedNodoeId",
                         "stakePeriodStart");
-    }
-
-    private IterableAssert<EntityHistory> assertHistoryEntities() {
-        return assertThat((Iterable<EntityHistory>) findHistory(EntityHistory.class, "id", "entity"))
-                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "declineReward", "stakedNodeId",
-                        "stakePeriodStart", "timestampRange");
     }
 
     @SneakyThrows
