@@ -2,7 +2,7 @@ name: "GCP Marketplace"
 
 on:
   push:
-    branches: [ 04801-Updating-gcp-marketplace-version ]
+    branches: [ 04801-Updating-gcp-marketplace-version,04801-Updating-gcp-marketplace-version-0.69.0 ]
 
 permissions:
   id-token: write
