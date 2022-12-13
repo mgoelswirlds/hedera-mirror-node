@@ -40,7 +40,6 @@ dependencies {
     implementation("io.projectreactor.addons:reactor-extra")
     implementation("io.vertx:vertx-pg-client")
     implementation("javax.inject:javax.inject")
-    implementation("net.devh:grpc-spring-boot-starter")
     implementation("org.hibernate.validator:hibernate-validator")
     implementation("org.msgpack:jackson-dataformat-msgpack")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
