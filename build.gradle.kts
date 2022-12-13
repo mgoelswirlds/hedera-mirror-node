@@ -66,6 +66,7 @@ dependencies {
         api("io.swagger:swagger-annotations:1.6.9")
         api("io.vertx:vertx-pg-client:4.3.5")
         api("javax.inject:javax.inject:1")
+        api("io.grpc:grpc-netty:1.51.0")
         api("net.java.dev.jna:jna:5.12.1")
         api("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
         api("org.apache.commons:commons-compress:1.22")
