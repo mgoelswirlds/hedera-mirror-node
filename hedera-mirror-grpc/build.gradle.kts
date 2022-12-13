@@ -35,6 +35,7 @@ dependencies {
     implementation("io.grpc:grpc-core")
     implementation("io.grpc:grpc-netty")
     implementation("io.grpc:grpc-services")
+    implementation("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
     implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("io.projectreactor.addons:reactor-extra")
