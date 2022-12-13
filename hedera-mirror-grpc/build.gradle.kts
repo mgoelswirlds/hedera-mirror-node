@@ -33,7 +33,7 @@ dependencies {
     implementation("com.ongres.scram:client")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.grpc:grpc-core")
-    implementation("io.grpc:grpc-netty")
+    implementation("io.grpc:grpc-netty-shaded")
     implementation("io.grpc:grpc-services")
     implementation("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
     implementation("io.micrometer:micrometer-registry-elastic")
