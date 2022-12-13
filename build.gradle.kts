@@ -66,9 +66,7 @@ dependencies {
         api("io.swagger:swagger-annotations:1.6.9")
         api("io.vertx:vertx-pg-client:4.3.5")
         api("javax.inject:javax.inject:1")
-        api("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE"){
-            exclude group: 'io.grpc', module: 'grpc-netty-shaded'
-        }
+        api("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
         api("net.java.dev.jna:jna:5.12.1")
         api("org.apache.commons:commons-compress:1.22")
         api("org.apache.commons:commons-math3:3.6.1")
@@ -84,6 +82,10 @@ dependencies {
         api("software.amazon.awssdk:bom:2.18.35")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.1")
     }
+}
+
+configurations.all {
+    exclude(group = "io.grpc", module = "grpc-netty-shaded")
 }
 
 allprojects {
