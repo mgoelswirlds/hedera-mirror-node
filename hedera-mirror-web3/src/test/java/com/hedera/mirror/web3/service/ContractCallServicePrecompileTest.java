@@ -27,6 +27,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
-    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @ParameterizedTest
     @EnumSource(ContractReadFunctions.class)
@@ -163,8 +163,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage(ERROR_MESSAGE);
+                .isInstanceOf(InvalidTransactionException.class)
+                .hasMessage("Precompile result is null");
     }
 
     private static long getValue(SupportedContractModificationFunctions contractFunc) {
@@ -386,6 +386,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
+        TRANSFER_FROM(
+                "transferFromExternal",
+                new Object[] {TRANSFRER_FROM_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
         APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 1L}, new Object[] {}),
         DELETE_ALLOWANCE(
                 "approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}, new Object[] {}),
@@ -461,10 +465,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER},
                 new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
-        TRANSFER_TOKEN(
-                "transferTokenExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, RECEIVER_ADDRESS, 1L},
-                new Object[] {}),
         TRANSFER_TOKEN_WITH(
                 "transferTokenExternal",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L},
@@ -520,10 +520,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_NFT_TOKEN(
                 "transferNFTExternal",
                 new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
-                new Object[] {}),
-        TRANSFER_FROM(
-                "transferFromExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
                 new Object[] {}),
         TRANSFER_FROM_NFT(
                 "transferFromNFTExternal",
