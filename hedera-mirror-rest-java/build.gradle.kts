@@ -31,7 +31,6 @@ dependencies {
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.mapstruct:mapstruct")
     implementation("org.springframework:spring-context-support")
-    implementation("org.springframework:spring-webmvc")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-validation")
