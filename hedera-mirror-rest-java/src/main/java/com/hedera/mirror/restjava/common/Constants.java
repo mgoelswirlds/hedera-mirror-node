@@ -16,16 +16,19 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.experimental.UtilityClass;
+public class Constants {
 
-@UtilityClass
-public class EntityIdUtils {
+    public static final Integer MAX_LIMIT = 100;
+    public static final Integer DEFAULT_LIMIT = 25;
 
-    public static Long[] parseIdFromString(String id) {
-        var parts = id.split("\\.");
-        if (parts.length == 1) {
-            return new Long[] {0L, 0L, Long.parseLong(id)};
-        }
-        return new Long[] {Long.parseLong(parts[0]), Long.parseLong(parts[1]), Long.parseLong(parts[2])};
-    }
+    public static final Integer MIN_LIMIT = 1;
+
+    enum EvmAddressType {
+        // evm address without shard and realm and with 0x prefix
+        NO_SHARD_REALM,
+        // evm address with shard and realm as optionals
+        OPTIONAL_SHARD_REALM,
+        // can be either a NO_SHARD_REALM or OPTIONAL_SHARD_REALM
+        ANY,
+    };
 }

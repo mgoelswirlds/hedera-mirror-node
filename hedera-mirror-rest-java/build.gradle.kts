@@ -31,6 +31,7 @@ dependencies {
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.mapstruct:mapstruct")
     implementation("org.springframework:spring-context-support")
+    implementation("org.springframework:spring-webmvc")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -52,8 +53,6 @@ tasks.withType<JavaCompile> {
                 "-Amapstruct.defaultComponentModel=jakarta",
                 "-Amapstruct.defaultInjectionStrategy=constructor",
                 "-Amapstruct.disableBuilders=true",
-                "-Amapstruct.unmappedTargetPolicy=IGNORE", // Remove once all Account fields have
-                // been mapped
             )
         )
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.exception;
 
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import java.io.Serial;
 
-@Getter
-@AllArgsConstructor
-public class Filter {
+@SuppressWarnings("java:S110")
+public class InvalidParametersException extends InvalidInputException {
 
-    @NotNull
-    String key;
+    @Serial
+    private static final long serialVersionUID = -2733708151765324881L;
 
-    @NotNull
-    RangeOperator operator;
-
-    @NotNull
-    String value;
+    public InvalidParametersException(String message) {
+        super(message);
+    }
 }

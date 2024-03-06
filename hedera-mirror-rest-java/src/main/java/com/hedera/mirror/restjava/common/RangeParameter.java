@@ -16,17 +16,6 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-class EntityIdUtilsTest {
-
-    @ParameterizedTest
-    @ValueSource(strings = {"0.0.1000", "1000"})
-    void testParseIdFromString(String id) {
-        var expected = EntityIdUtils.parseIdFromString(id);
-        assertThat(expected[2]).isEqualTo(1000);
-    }
+public record RangeParameter<T>(RangeOperator operator, T value) {
+    public static final RangeParameter<?> EMPTY = new RangeParameter<>(null, null);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.exception;
 
-import lombok.experimental.UtilityClass;
+import java.io.Serial;
 
-@UtilityClass
-public class FilterKey {
+@SuppressWarnings("java:S110")
+public abstract class InvalidInputException extends RestException {
 
-    public static final String ACCOUNT_ID = "account.id";
-    public static final String TOKEN_ID = "token.id";
+    @Serial
+    private static final long serialVersionUID = 2844340575857376468L;
+
+    protected InvalidInputException(String message) {
+        super(message);
+    }
 }

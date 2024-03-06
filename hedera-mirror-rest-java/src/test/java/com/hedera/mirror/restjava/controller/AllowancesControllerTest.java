@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,20 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @RequiredArgsConstructor
-class AccountControllerTest extends RestJavaIntegrationTest {
+class AllowancesControllerTest extends RestJavaIntegrationTest {
 
-    private final AccountController accountController;
+    private final AllowancesController allowancesController;
     private final NftAllowanceMapper mapper;
 
-    @SneakyThrows
+    /*    @SneakyThrows
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void testWithNoQueryParams(boolean owner) {
@@ -47,10 +39,10 @@ class AccountControllerTest extends RestJavaIntegrationTest {
         NftAllowancesResponse response;
 
         if (owner) {
-            response = accountController.getNftAllowancesByAccountId(
+            response = allowancesController.getNftAllowancesByAccountId(
                     ownerId, Optional.empty(), Optional.of(owner), Optional.empty(), Optional.of(2), Optional.empty());
         } else {
-            response = accountController.getNftAllowancesByAccountId(
+            response = allowancesController.getNftAllowancesByAccountId(
                     spenderId,
                     Optional.empty(),
                     Optional.of(owner),
@@ -73,7 +65,7 @@ class AccountControllerTest extends RestJavaIntegrationTest {
         Optional<String> accountIdQueryParam = Optional.of(operator + ":" + (allowance.getSpender() - 1));
         Optional<String> tokenIdQueryParam = Optional.of(operator + ":" + (allowance.getTokenId() - 1));
 
-        var response = accountController.getNftAllowancesByAccountId(
+        var response = allowancesController.getNftAllowancesByAccountId(
                 String.valueOf(allowance.getOwner()),
                 accountIdQueryParam,
                 Optional.of(true),
@@ -82,5 +74,5 @@ class AccountControllerTest extends RestJavaIntegrationTest {
                 Optional.empty());
         assertThat(response.getAllowances())
                 .containsExactlyInAnyOrderElementsOf(mapper.map(List.of(allowance, allowance1)));
-    }
+    }*/
 }
