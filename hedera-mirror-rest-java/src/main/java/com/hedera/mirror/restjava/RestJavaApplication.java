@@ -16,24 +16,15 @@
 
 package com.hedera.mirror.restjava;
 
-import com.hedera.mirror.restjava.common.RangeParameterMethodResolver;
-import java.util.List;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @ConfigurationPropertiesScan
 @EntityScan("com.hedera.mirror.common.domain")
 @SpringBootApplication
-public class RestJavaApplication implements WebMvcConfigurer {
-
-    @Override
-    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
-        argumentResolvers.add(new RangeParameterMethodResolver());
-    }
+public class RestJavaApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(RestJavaApplication.class, args);

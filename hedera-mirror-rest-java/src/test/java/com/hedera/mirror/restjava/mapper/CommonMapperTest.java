@@ -19,9 +19,7 @@ package com.hedera.mirror.restjava.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.TimestampRange;
-import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
@@ -44,25 +42,17 @@ class CommonMapperTest {
     }
 
     @Test
-    void mapInstant() {
-        var now = Instant.now();
-        assertThat(commonMapper.mapInstant(null)).isNull();
-        assertThat(commonMapper.mapInstant(0L)).isEqualTo(Instant.EPOCH);
-        assertThat(commonMapper.mapInstant(DomainUtils.convertToNanosMax(now))).isEqualTo(now);
-    }
-
-    @Test
     void mapRange() {
         var range = new TimestampRange();
-        range.setFrom(Instant.EPOCH.toString());
+        var now = System.nanoTime();
+        range.setFrom("0.0");
         assertThat(commonMapper.mapRange(null)).isNull();
         assertThat(commonMapper.mapRange(Range.atLeast(0L)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
 
-        range.setTo(Instant.now().toString());
-        assertThat(commonMapper.mapRange(
-                        Range.openClosed(0L, DomainUtils.convertToNanosMax(Instant.parse(range.getTo())))))
+        range.setTo(String.valueOf(now / Math.pow(10, 9)));
+        assertThat(commonMapper.mapRange(Range.openClosed(0L, now)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
     }

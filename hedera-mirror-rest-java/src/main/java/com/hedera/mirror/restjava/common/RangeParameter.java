@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.restjava.common;
 
-public record RangeParameter<T>(RangeOperator operator, T value) {
-    public static final RangeParameter<?> EMPTY = new RangeParameter<>(null, null);
+public interface RangeParameter<T> {
+
+    RangeOperator getOperator();
+
+    T getValue();
 }
