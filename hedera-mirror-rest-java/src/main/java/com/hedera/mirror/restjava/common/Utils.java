@@ -16,12 +16,178 @@
 
 package com.hedera.mirror.restjava.common;
 
+import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
+import static com.hedera.mirror.restjava.common.Constants.encodedEntityIdRegex;
+import static com.hedera.mirror.restjava.common.Constants.entityIdRegex;
+import static com.hedera.mirror.restjava.common.Constants.evmAddressRegex;
+import static com.hedera.mirror.restjava.common.Constants.evmAddressShardRealmRegex;
+import static com.hedera.mirror.restjava.common.Constants.maxEncodedId;
+import static com.hedera.mirror.restjava.common.Constants.maxNum;
+import static com.hedera.mirror.restjava.common.Constants.maxRealm;
+import static com.hedera.mirror.restjava.common.Constants.maxShard;
+import static com.hedera.mirror.restjava.common.Constants.numBits;
+import static com.hedera.mirror.restjava.common.Constants.realmBits;
+
+import com.hedera.mirror.restjava.exception.InvalidParametersException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 
 public class Utils {
-
     public static final Map<Sort.Direction, RangeOperator> OPERATOR_PATTERNS = Map.of(
-            Sort.Direction.ASC, RangeOperator.GTE,
-            Sort.Direction.DESC, RangeOperator.LTE);
+            Sort.Direction.ASC, RangeOperator.gte,
+            Sort.Direction.DESC, RangeOperator.lte);
+
+    public static boolean isValidEntityIdPattern(String id) {
+        if (StringUtils.isBlank(id)) {
+            return false;
+        }
+        if (isAMatch(entityIdRegex, id) || isAMatch(encodedEntityIdRegex, id)) {
+            return true;
+        }
+        return isValidEvmAddress(id, Constants.EvmAddressType.ANY);
+    }
+
+    private static boolean isAMatch(String regex, String id) {
+        Pattern partitionedPattern = Pattern.compile(regex);
+        var matcher = partitionedPattern.matcher(id);
+        return matcher.matches();
+    }
+
+    private static boolean isValidEvmAddress(String address, Constants.EvmAddressType evmAddressType) {
+
+        if (evmAddressType == Constants.EvmAddressType.ANY) {
+            return isAMatch(evmAddressRegex, address) || isAMatch(evmAddressShardRealmRegex, address);
+        }
+        if (evmAddressType == Constants.EvmAddressType.NO_SHARD_REALM) {
+            return isAMatch(evmAddressRegex, address);
+        }
+        return isAMatch(evmAddressShardRealmRegex, address);
+    }
+
+    /**
+     * Parses shard, realm, num from EVM address string.
+     * @param {string} evmAddress
+     * @return {bigint[3]}
+     */
+    public static long[] parseFromEvmAddress(String evmAddress) {
+        // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
+        var hexDigits = evmAddress.replace("0x", "");
+        return new long[] {
+            Long.parseLong(hexDigits.substring(0, 8), 16), // shard
+            Long.parseLong(hexDigits.substring(8, 24), 16), // realm
+            Long.parseLong(hexDigits.substring(24, 40), 16)
+        }; // num
+    }
+
+    public static long[] parseId(String id) {
+        if (isValidEntityIdPattern(id)) {
+            var idParts = id.contains(".") || isValidEvmAddressLength(id.length())
+                    ? parseDelimitedString(id)
+                    : parseFromEncodedId(id);
+            if (idParts[2] > maxNum || idParts[1] > maxRealm || idParts[0] > maxShard) {
+                throw new InvalidParametersException(id + "- Id has an invalid format");
+            }
+            return idParts;
+        } else {
+            throw new InvalidParametersException(id + "- Id has an invalid format");
+        }
+    }
+
+    private static long[] parseDelimitedString(String id) {
+        List<String> parts =
+                SPLITTER.splitToStream(Objects.requireNonNullElse(id, "")).toList();
+        var numOrEvmAddress = parts.getLast();
+
+        if (isValidEvmAddressLength(numOrEvmAddress.length())) {
+            var evmAddress = numOrEvmAddress.replace("0x", "");
+            var shardRealmNum = parseFromEvmAddress(numOrEvmAddress);
+            var shard = shardRealmNum[0];
+            var realm = shardRealmNum[1];
+            var num = shardRealmNum[2];
+            if (shard > maxShard || realm > maxRealm || num > maxNum) {
+                // non-parsable evm address. get id num from evm address here
+                /*shard = parts.length == 3 ? Long.parseLong(parts[0]) : null;
+                realm = parts.length == 3 ? Long.parseLong(parts[1]) : null;
+                return new long[]{shard, realm, null};*/
+            } else {
+                if (parts.size() == 3
+                        && ((Long.parseLong(parts.getFirst()) != shard) || Long.parseLong(parts.get(1)) != realm)) {
+                    throw new InvalidParametersException(id + "- Id has an invalid format");
+                }
+                return new long[] {shard, realm, num};
+            }
+        }
+
+        // it's either shard.realm.num or realm.num
+        if (parts.size() < 3) {
+            return new long[] {0, 0, Long.parseLong(parts.getLast())};
+        }
+        return ArrayUtils.toPrimitive(parts.stream().map(Long::valueOf).toArray(Long[]::new));
+    }
+
+    /**
+     * Parses shard, realm, num from encoded ID string.
+     * @param {string} id
+     * @return {[BigInt, BigInt, BigInt]}
+     */
+    private static long[] parseFromEncodedId(String id) {
+        var encodedId = Long.parseLong(id);
+        if (encodedId > maxEncodedId) {
+            throw new InvalidParametersException(id + "- Id has an invalid format");
+        }
+        var num = encodedId & maxNum;
+        var shardRealm = encodedId >> numBits;
+        var realm = shardRealm & maxRealm;
+        var shard = shardRealm >> realmBits;
+        return new long[] {shard, realm, num};
+    }
+
+    public static boolean isValidEvmAddressLength(int len) {
+        return len == 40 || len == 42;
+    }
+
+    public static String getPaginationLink(
+            HttpServletRequest req,
+            boolean isEnd,
+            Map<String, String> lastValues,
+            Map<String, Boolean> included,
+            Sort.Direction order,
+            int limit) {
+        var url = req.getRequestURI();
+        StringBuilder paginationLink = new StringBuilder();
+
+        if (!isEnd) {
+            // add limit and order
+            var limitString = "?limit=" + limit;
+            var orderString = "&order=" + order;
+            var next = getNextParamQueries(order, lastValues, included);
+            // remove the '/' at the end of req.path
+            var path = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+            paginationLink.append(path);
+            paginationLink.append(limitString);
+            paginationLink.append(orderString);
+            paginationLink.append(next);
+        }
+        return paginationLink.isEmpty() ? null : paginationLink.toString();
+    }
+
+    private static String getNextParamQueries(
+            Sort.Direction order, Map<String, String> lastValues, Map<String, Boolean> includedMap) {
+        StringBuilder next = new StringBuilder();
+        for (Map.Entry<String, String> lastValue : lastValues.entrySet()) {
+            boolean inclusive = includedMap.get(lastValue.getKey());
+            var pattern = OPERATOR_PATTERNS.get(order);
+            var newPattern = order == Sort.Direction.ASC ? RangeOperator.gt : RangeOperator.lt;
+            var insertValue =
+                    inclusive ? pattern + ":" + lastValue.getValue() : newPattern + ":" + lastValue.getValue();
+            next.append("&").append(lastValue.getKey()).append("=").append(insertValue);
+        }
+        return next.toString();
+    }
 }
