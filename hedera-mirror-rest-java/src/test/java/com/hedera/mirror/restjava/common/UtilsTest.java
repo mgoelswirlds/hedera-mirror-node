@@ -130,8 +130,8 @@ public class UtilsTest {
         var lastValues = Map.of(ACCOUNT_ID, "0.0.2000");
         var included = Map.of(ACCOUNT_ID, true);
         assertEquals(
-                uri + "?limit=2&order=asc&account.id=gte:0.0.2000",
-                getPaginationLink(request, false, lastValues, included, Sort.Direction.ASC, 2));
+                getPaginationLink(request, false, lastValues, included, Sort.Direction.ASC, 2),
+                uri + "?limit=2&order=asc&account.id=gte:0.0.2000");
     }
 
     @Test
@@ -141,8 +141,12 @@ public class UtilsTest {
         when(request.getRequestURI()).thenReturn(uri);
         var lastValues = Map.of(ACCOUNT_ID, "0.0.2000");
         var included = Map.of(ACCOUNT_ID, true);
-        assertNull(null, getPaginationLink(request, true, lastValues, included, Sort.Direction.ASC, 2));
-        assertNull(null, getPaginationLink(request, false, null, included, Sort.Direction.ASC, 2));
-        assertNull(null, getPaginationLink(request, false, Map.of(), Map.of(), Sort.Direction.ASC, 2));
+
+        // When the last element has already been returned
+        assertNull(getPaginationLink(request, true, lastValues, included, Sort.Direction.ASC, 2));
+        // When the lastValues map is null
+        assertNull(getPaginationLink(request, false, null, included, Sort.Direction.ASC, 2));
+        // When the no lastValues have been passed
+        assertNull(getPaginationLink(request, false, Map.of(), Map.of(), Sort.Direction.ASC, 2));
     }
 }

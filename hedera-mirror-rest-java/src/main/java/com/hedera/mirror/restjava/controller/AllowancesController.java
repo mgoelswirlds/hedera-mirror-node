@@ -75,16 +75,20 @@ public class AllowancesController {
             @RequestParam(defaultValue = "" + DEFAULT_LIMIT) @Min(MIN_LIMIT) @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") String order) {
 
-        // Add account id param validation if token Id is present
-
         long accountPathParam = id.getValue().getNum();
-        var orderDirection = Sort.Direction.fromString(order);
+        Sort.Direction orderDirection;
+        try {
+            orderDirection = Sort.Direction.fromString(order);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidParametersException("order parameter must have a valid direction");
+        }
         NftAllowanceRequestBuilder requestBuilder =
                 NftAllowanceRequest.builder().limit(limit).order(orderDirection).isOwner(owner);
 
         if (accountId == null && tokenId != null) {
             throw new InvalidParametersException("token.id parameter must have account.id present");
         }
+
         // Setting both owner and spender Id to the account.id query parameter value.
         if (accountId != null && accountId.getValue() != null) {
             requestBuilder
