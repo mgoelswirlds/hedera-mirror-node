@@ -50,7 +50,6 @@ class CommonMapperTest {
         assertThat(commonMapper.mapRange(Range.atLeast(0L)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
-
         range.setTo(String.valueOf(now / Math.pow(10, 9)));
         assertThat(commonMapper.mapRange(Range.openClosed(0L, now)))
                 .usingRecursiveComparison()
