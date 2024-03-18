@@ -39,9 +39,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 
 public class Utils {
-    public static final Map<Sort.Direction, RangeOperator> OPERATOR_PATTERNS = Map.of(
-            Sort.Direction.ASC, RangeOperator.gte,
-            Sort.Direction.DESC, RangeOperator.lte);
+    public static final Map<String, RangeOperator> OPERATOR_PATTERNS = Map.of(
+            "asc", RangeOperator.gte,
+            "desc", RangeOperator.lte);
 
     public static boolean isValidEntityIdPattern(String id) {
         if (StringUtils.isBlank(id)) {
@@ -70,11 +70,6 @@ public class Utils {
         return isAMatch(evmAddressShardRealmRegex, address);
     }
 
-    /**
-     * Parses shard, realm, num from EVM address string.
-     * @param {string} evmAddress
-     * @return {bigint[3]}
-     */
     public static long[] parseFromEvmAddress(String evmAddress) {
         // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
         var hexDigits = evmAddress.replace("0x", "");
@@ -112,9 +107,6 @@ public class Utils {
             var num = shardRealmNum[2];
             if (shard > maxShard || realm > maxRealm || num > maxNum) {
                 // non-parsable evm address. get id num from evm address here
-                /*shard = parts.length == 3 ? Long.parseLong(parts[0]) : null;
-                realm = parts.length == 3 ? Long.parseLong(parts[1]) : null;
-                return new long[]{shard, realm, null};*/
             } else {
                 if (parts.size() == 3
                         && ((Long.parseLong(parts.getFirst()) != shard) || Long.parseLong(parts.get(1)) != realm)) {
@@ -131,11 +123,6 @@ public class Utils {
         return ArrayUtils.toPrimitive(parts.stream().map(Long::valueOf).toArray(Long[]::new));
     }
 
-    /**
-     * Parses shard, realm, num from encoded ID string.
-     * @param {string} id
-     * @return {[BigInt, BigInt, BigInt]}
-     */
     private static long[] parseFromEncodedId(String id) {
         var encodedId = Long.parseLong(id);
         if (encodedId > maxEncodedId) {
@@ -162,28 +149,36 @@ public class Utils {
         var url = req.getRequestURI();
         StringBuilder paginationLink = new StringBuilder();
 
+        if (lastValues == null || lastValues.isEmpty()) {
+            return null;
+        }
+
         if (!isEnd) {
             // add limit and order
-            var limitString = "?limit=" + limit;
-            var orderString = "&order=" + order;
-            var next = getNextParamQueries(order, lastValues, included);
+            var orderString = order == null
+                    ? Sort.Direction.ASC.toString().toLowerCase()
+                    : order.toString().toLowerCase();
+            var next = getNextParamQueries(orderString, lastValues, included);
+            if (next.isBlank()) {
+                return null;
+            }
             // remove the '/' at the end of req.path
             var path = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
             paginationLink.append(path);
-            paginationLink.append(limitString);
-            paginationLink.append(orderString);
+            paginationLink.append("?limit=").append(limit);
+            paginationLink.append("&order=").append(orderString);
             paginationLink.append(next);
         }
         return paginationLink.isEmpty() ? null : paginationLink.toString();
     }
 
     private static String getNextParamQueries(
-            Sort.Direction order, Map<String, String> lastValues, Map<String, Boolean> includedMap) {
+            String order, Map<String, String> lastValues, Map<String, Boolean> includedMap) {
         StringBuilder next = new StringBuilder();
         for (Map.Entry<String, String> lastValue : lastValues.entrySet()) {
             boolean inclusive = includedMap.get(lastValue.getKey());
             var pattern = OPERATOR_PATTERNS.get(order);
-            var newPattern = order == Sort.Direction.ASC ? RangeOperator.gt : RangeOperator.lt;
+            var newPattern = order.equals("asc") ? RangeOperator.gt : RangeOperator.lt;
             var insertValue =
                     inclusive ? pattern + ":" + lastValue.getValue() : newPattern + ":" + lastValue.getValue();
             next.append("&").append(lastValue.getKey()).append("=").append(insertValue);

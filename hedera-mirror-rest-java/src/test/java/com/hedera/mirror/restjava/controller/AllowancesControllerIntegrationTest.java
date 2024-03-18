@@ -27,7 +27,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import jakarta.annotation.Resource;
 import java.util.Collection;
@@ -40,6 +39,7 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 @RunWith(SpringRunner.class)
@@ -54,8 +54,13 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     @Resource
     private NftAllowanceMapper mapper;
 
-    private static final String ACCOUNT_ID = "accountId";
-    private static final String TOKEN_ID = "tokenId";
+    private static final String ACCOUNT_ID = "account.id";
+    private static final String TOKEN_ID = "token.id";
+    private static final String accountIdParam = "account.id={account.id}&";
+    private static final String ownerParam = "owner={owner}&";
+    private static final String tokenIdParam = "token.id={token.id}&";
+    private static final String limitParam = "limit={limit}&";
+    private static final String orderParam = "order={order}";
 
     @Test
     void successWithNoQueryParams() {
@@ -100,8 +105,8 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 "1",
                 ORDER,
                 "ASC");
-        var params = "?" + "account.id={accountId}&" + "owner={owner}&" + "token.id={tokenId}&" + "limit={limit}&"
-                + "order={order}";
+
+        var params = "?" + accountIdParam + ownerParam + tokenIdParam + limitParam + orderParam;
 
         // Creating the rest client with the uri variables
         RestClient restClient = RestClient.builder()
@@ -115,7 +120,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance)));
         assertThat(result.getLinks().getNext())
                 .isEqualTo("/api/v1/accounts/" + allowance.getOwner()
-                        + "/allowances/nfts?limit=1&order=ASC&account.id=gte:" + EntityId.of(allowance.getSpender())
+                        + "/allowances/nfts?limit=1&order=asc&account.id=gte:" + EntityId.of(allowance.getSpender())
                         + "&token.id=gt:" + EntityId.of(allowance.getTokenId()));
     }
 
@@ -142,8 +147,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 "1",
                 ORDER,
                 "DESC");
-        var params = "?" + "account.id={accountId}&" + "owner={owner}&" + "token.id={tokenId}&" + "limit={limit}&"
-                + "order={order}";
+        var params = "?" + accountIdParam + ownerParam + tokenIdParam + limitParam + orderParam;
 
         // Creating the rest client with the uri variables
         RestClient restClient = RestClient.builder()
@@ -157,17 +161,15 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
         assertThat(result.getLinks().getNext())
                 .isEqualTo("/api/v1/accounts/" + allowance1.getOwner()
-                        + "/allowances/nfts?limit=1&order=DESC&account.id=lte:" + EntityId.of(allowance1.getSpender())
+                        + "/allowances/nfts?limit=1&order=desc&account.id=lte:" + EntityId.of(allowance1.getSpender())
                         + "&token.id=lt:" + EntityId.of(allowance1.getTokenId()));
     }
 
     @ParameterizedTest
-    @CsvSource({"0.0.1001,null,null,false,2,asc"})
+    @CsvSource({"0.0.1001,1.2.3.4,0.0.2000,false,2,asc", "0.0.1001,0.0.2000,1.2.3.4,false,2,asc"})
     void failWithInvalidParams(String id, String accountId, String tokenId, String owner, String limit, String order) {
         Map<String, String> uriVariables =
                 Map.of("id", id, ACCOUNT_ID, accountId, OWNER, owner, TOKEN_ID, tokenId, LIMIT, limit, ORDER, order);
-        var params = "?" + "account.id={accountId}&" + "owner={owner}&" + "token.id={tokenId}&" + "limit={limit}&"
-                + "order={order}";
 
         RestClient restClient = RestClient.builder()
                 .baseUrl(CALL_URI)
@@ -175,8 +177,28 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .build();
 
         // Performing the GET operation
-        assertThrows(
-                InvalidParametersException.class,
-                () -> restClient.get().uri(params).retrieve().body(NftAllowancesResponse.class));
+        assertThrows(HttpClientErrorException.BadRequest.class, () -> restClient
+                .get()
+                .uri("?" + accountIdParam + ownerParam + tokenIdParam + limitParam + orderParam)
+                .retrieve()
+                .body(NftAllowancesResponse.class));
+    }
+
+    @Test
+    void tokenIdPresentWithoutAccount() {
+        Map<String, String> uriVariables =
+                Map.of("id", "0.0.1000", OWNER, "true", TOKEN_ID, "gt:1000", LIMIT, "1", ORDER, "asc");
+
+        RestClient restClient = RestClient.builder()
+                .baseUrl(CALL_URI)
+                .defaultUriVariables(uriVariables)
+                .build();
+
+        // Performing the GET operation
+        assertThrows(HttpClientErrorException.BadRequest.class, () -> restClient
+                .get()
+                .uri("?" + ownerParam + tokenIdParam + limitParam + orderParam)
+                .retrieve()
+                .body(NftAllowancesResponse.class));
     }
 }

@@ -16,19 +16,34 @@
 
 package com.hedera.mirror.restjava.common;
 
+import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.Utils.getPaginationLink;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.restjava.exception.InvalidParametersException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
+@ExtendWith(MockitoExtension.class)
 public class UtilsTest {
+
+    @Mock
+    HttpServletRequest request;
 
     @ParameterizedTest
     @ValueSource(strings = {"3", "65535.000000001", "1.2.3", "0.2.3", "2814792716779530", "" + (Long.MAX_VALUE)})
@@ -105,5 +120,29 @@ public class UtilsTest {
         assertArrayEquals(Utils.parseId("0x0000000100000000000000020000000000000007"), new long[] {1, 2, 7});
         assertArrayEquals(Utils.parseId("1.2.0000000100000000000000020000000000000007"), new long[] {1, 2, 7});
         // Handle null and evm address cases
+    }
+
+    @Test
+    @DisplayName("Get pagination links")
+    void getPaginationLinks() {
+        var uri = "/api/v1/1001/accounts/allowances/nfts";
+        when(request.getRequestURI()).thenReturn(uri);
+        var lastValues = Map.of(ACCOUNT_ID, "0.0.2000");
+        var included = Map.of(ACCOUNT_ID, true);
+        assertEquals(
+                uri + "?limit=2&order=asc&account.id=gte:0.0.2000",
+                getPaginationLink(request, false, lastValues, included, Sort.Direction.ASC, 2));
+    }
+
+    @Test
+    @DisplayName("Empty next link")
+    void getEmptyPaginationLinks() {
+        var uri = "/api/v1/1001/accounts/allowances/nfts";
+        when(request.getRequestURI()).thenReturn(uri);
+        var lastValues = Map.of(ACCOUNT_ID, "0.0.2000");
+        var included = Map.of(ACCOUNT_ID, true);
+        assertNull(null, getPaginationLink(request, true, lastValues, included, Sort.Direction.ASC, 2));
+        assertNull(null, getPaginationLink(request, false, null, included, Sort.Direction.ASC, 2));
+        assertNull(null, getPaginationLink(request, false, Map.of(), Map.of(), Sort.Direction.ASC, 2));
     }
 }

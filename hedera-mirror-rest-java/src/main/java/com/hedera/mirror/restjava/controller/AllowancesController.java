@@ -73,14 +73,14 @@ public class AllowancesController {
             @RequestParam(defaultValue = "true") boolean owner,
             @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId,
             @RequestParam(defaultValue = "" + DEFAULT_LIMIT) @Min(MIN_LIMIT) @Max(MAX_LIMIT) int limit,
-            @RequestParam(defaultValue = "ASC") Sort.Direction order) {
+            @RequestParam(defaultValue = "asc") String order) {
 
         // Add account id param validation if token Id is present
 
         long accountPathParam = id.getValue().getNum();
-
+        var orderDirection = Sort.Direction.fromString(order);
         NftAllowanceRequestBuilder requestBuilder =
-                NftAllowanceRequest.builder().limit(limit).order(order).isOwner(owner);
+                NftAllowanceRequest.builder().limit(limit).order(orderDirection).isOwner(owner);
 
         if (accountId == null && tokenId != null) {
             throw new InvalidParametersException("token.id parameter must have account.id present");
@@ -107,7 +107,7 @@ public class AllowancesController {
 
         String next = null;
         if (!serviceResponse.isEmpty() && serviceResponse.size() == limit) {
-            next = buildNextLink(owner, order, limit, response, serviceResponse);
+            next = buildNextLink(owner, orderDirection, limit, response, serviceResponse);
         }
         response.links(new Links().next(next));
         return response;
