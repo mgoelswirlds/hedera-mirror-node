@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.exception;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import java.io.Serial;
 
-@Getter
-@AllArgsConstructor
-public enum RangeOperator {
-    LT("<"),
-    LTE("<="),
-    GT(">"),
-    GTE(">="),
-    EQ("="),
-    NE("!=");
+@SuppressWarnings("java:S110")
+public abstract class InvalidInputException extends RestException {
 
-    private final String operator;
+    @Serial
+    private static final long serialVersionUID = 2844340575857376468L;
 
-    @Override
-    public String toString() {
-        return name().toLowerCase();
+    protected InvalidInputException(String message) {
+        super(message);
     }
 }

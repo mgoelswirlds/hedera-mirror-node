@@ -16,23 +16,9 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+public interface RangeParameter<T> {
 
-@Getter
-@AllArgsConstructor
-public enum RangeOperator {
-    LT("<"),
-    LTE("<="),
-    GT(">"),
-    GTE(">="),
-    EQ("="),
-    NE("!=");
+    RangeOperator getOperator();
 
-    private final String operator;
-
-    @Override
-    public String toString() {
-        return name().toLowerCase();
-    }
+    T getValue();
 }

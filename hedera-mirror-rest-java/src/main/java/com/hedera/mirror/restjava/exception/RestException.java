@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.config;
+package com.hedera.mirror.restjava.exception;
 
-import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
-import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
-import io.micrometer.core.instrument.binder.MeterBinder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import com.hedera.mirror.common.exception.MirrorNodeException;
+import java.io.Serial;
 
-@Configuration
-class MetricsConfiguration {
+public abstract class RestException extends MirrorNodeException {
 
-    @Bean
-    MeterBinder processMemoryMetrics() {
-        return new ProcessMemoryMetrics();
-    }
+    @Serial
+    private static final long serialVersionUID = 540139852402841430L;
 
-    @Bean
-    MeterBinder processThreadMetrics() {
-        return new ProcessThreadMetrics();
+    protected RestException(String message) {
+        super(message);
     }
 }
